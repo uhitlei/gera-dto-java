@@ -1,12 +1,31 @@
+# Saidas de build (Ant/NetBeans)
+build/
+dist/
 *.class
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# Configuracoes locais do NetBeans
+nbproject/private/
+
+# Dependencias baixadas pelo build (ver build.xml, alvo -pre-init)
+lib/*.jar
+
+# Configuracao local com credenciais (use bancodedados.properties.exemplo)
+src/utilitarios/bancodedados.properties
+
+# Classes geradas pela ferramenta (pasta padrao de saida)
+gerado/
 
 # Package Files #
 *.jar
 *.war
 *.ear
 
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
