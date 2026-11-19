@@ -6,11 +6,8 @@ package com.java.geraDTO.gerador;
 
 import com.java.geraDTO.bean.ListColuna;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import utilitarios.Local;
-import utilitarios.conexao;
 
 /**
  *
@@ -25,7 +22,6 @@ public class GeradorClasseDAO {
     
     String primeirasLinhas;
     String geterSetter;
-    FileWriter arquivo;
     
     String GRUD_Salvar;
     String GRUD_Atualizar;
@@ -35,10 +31,11 @@ public class GeradorClasseDAO {
     String GRUD_DAO;
 
     public GeradorClasseDAO(String nomeClasse, List<ListColuna> atributos, String pacoteClasseCon, String ClasseConexao) {
-        this.pacote="package com.java.geraDTO.classeGerada.bean; \n\n "
+        this.pacote="package "+GeradorClasseDTO.PACOTE_GERADO+";\n\n"
                   + "import java.sql.*;\n"
                   + "import java.util.*;\n"
-                  + "import "+pacoteClasseCon+"."+ClasseConexao+";\n"
+                  + (pacoteClasseCon == null || pacoteClasseCon.trim().isEmpty()
+                        ? "" : "import "+pacoteClasseCon.trim()+"."+ClasseConexao+";\n")
                   + "import javax.swing.*;\n\n\n\n";
         this.ClasseConexao = ClasseConexao;
         this.nomeClasse = nomeClasse;
@@ -64,26 +61,19 @@ public class GeradorClasseDAO {
          this.GRUD_Excluir= getMetodoExcluir(nomeClasse,atributos);
          this.GRUD_Localizar=getMetodoLocalizar(nomeClasse,atributos);
          this.GRUD_Listar=getMetodoListar(nomeClasse,atributos);
-          try {
-           
-            arquivo = new FileWriter(new File(new conexao().config.getString("local")+ new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse) + "DAO.java"));
-            //  System.out.println("LOCAL: "+new Local().getLocal());
-           //  arquivo = new FileWriter(new File(this.getClass().getResource("com/java/geraDTO/classeGerada/bean/") + new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse) + "DAO.java"));
-            arquivo.write(pacote + primeirasLinhas+GRUD_Salvar+"\n\t"+GRUD_Atualizar+"\n\t"+GRUD_Excluir+"\n\t"+GRUD_Localizar+"\n\t"+GRUD_Listar+"\n\n\t}");
-            arquivo.close();
-            
-        } catch (IOException e) {
-            System.out.println("ERRO IO: " + e.getMessage());
-            e.printStackTrace();
-            
-        } catch (Exception e) {
-            System.out.println("ERRO Exeption: " + e.getMessage());
-            e.printStackTrace();
-            
-        }
-   
-        
-        
+         this.GRUD_DAO = pacote + primeirasLinhas+GRUD_Salvar+"\n\t"+GRUD_Atualizar+"\n\t"+GRUD_Excluir+"\n\t"+GRUD_Localizar+"\n\t"+GRUD_Listar+"\n\n\t}\n";
+    }
+
+    /** Codigo-fonte do DAO gerado (montado no construtor, sem acessar banco nem disco). */
+    public String gerarCodigo() {
+        return GRUD_DAO;
+    }
+
+    /** Grava {@code <Tabela>DAO.java} no diretorio informado. */
+    public File salvarEm(File diretorio) throws IOException {
+        File arquivo = new File(diretorio, new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse) + "DAO.java");
+        GeradorClasseDTO.escreveArquivo(arquivo, GRUD_DAO);
+        return arquivo;
     }
 
     private String getMetodoSalvar(String nomeClasse, List<ListColuna> atributos) {
@@ -97,13 +87,13 @@ public class GeradorClasseDAO {
                 + "\t\t\tps = con.prepareStatement(sqlSalvar);\n"
                 + "\t\t\t";
          for(int i=1;i<atributos.size();i++){//ps.setString(1, cliente.getAuditoria());
-             funcao=funcao+"ps.set"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(i).getTypoColuna().toLowerCase()))+""
+             funcao=funcao+"ps.set"+MapeadorTipos.metodoJdbc(atributos.get(i).getTypoColuna())+""
                      + "("+i+", "+nomeClasse+".get"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(i).getColuna())+"());\n\t\t\t";
          }      
         funcao=funcao+ "ps.executeUpdate();\n\t\t\t"
                      + "JOptionPane.showMessageDialog(null,"+'"'+"Inserido Com Sucesso: "+'"'+","+'"'+"Mensagem do Sistema - Salvar"+'"'+",1);\n\t\t\t"
                      
-                     + getCatchAndFinally("Salvar")
+                     + getCatchAndFinally("Salvar", false)
                      + "}\n\t\t";
         return funcao;
         
@@ -133,13 +123,6 @@ public class GeradorClasseDAO {
         return '"'+before+" ("+colunas+" ) VALUES ("+after+")"+'"';
     }
 
-    private String getIntCerto(String tipoAtributoCorreto) {
-        if(tipoAtributoCorreto.equalsIgnoreCase("Integer"))
-            return tipoAtributoCorreto="Int";
-        return tipoAtributoCorreto;
-    }
-
-    
     private String getMetodoAtualizar(String nomeClasse, List<ListColuna> atributos){
         String funcao="\tpublic void atualizar("+new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse) +" "+nomeClasse+") throws SQLException {\n"
                 + "\t\tConnection con = DriverManager.getConnection(new "+this.ClasseConexao+"().config.getString("+'"'+"url"+'"'+") ,"
@@ -151,16 +134,16 @@ public class GeradorClasseDAO {
                 + "\t\t\tps = con.prepareStatement(sqlAtualizar);\n"
                 + "\t\t\t";
         for(int i=1;i<atributos.size();i++){//ps.setString(1, cliente.getAuditoria());
-             funcao=funcao+"ps.set"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(i).getTypoColuna().toLowerCase()))+""
+             funcao=funcao+"ps.set"+MapeadorTipos.metodoJdbc(atributos.get(i).getTypoColuna())+""
                      + "("+i+", "+nomeClasse+".get"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(i).getColuna())+"());\n\t\t\t";
          }   
-         funcao=funcao+"ps.set"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(0).getTypoColuna().toLowerCase()))+""
+         funcao=funcao+"ps.set"+MapeadorTipos.metodoJdbc(atributos.get(0).getTypoColuna())+""
                      + "("+atributos.size()+", "+nomeClasse+".get"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(0).getColuna())+"());\n\t\t\t";
          
          funcao=funcao+"ps.executeUpdate();\n\t\t"
                       + "JOptionPane.showMessageDialog(null,"+'"'+"Atualizado Com Sucesso: "+'"'+","+'"'+"Mensagem do Sistema - Atualizar"+'"'+",1);\n\t\t\t"
                      
-                     + getCatchAndFinally("Atualizar")
+                     + getCatchAndFinally("Atualizar", false)
                      + "}\n\t\t";
          
         return funcao;
@@ -197,12 +180,12 @@ public class GeradorClasseDAO {
                 + "\t\ttry{\n"//try
                 + "\t\t\tps = con.prepareStatement(sqlExcluir);\n"
                 + "\t\t\t";
-         funcao=funcao+"ps.set"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(0).getTypoColuna().toLowerCase()))+""
+         funcao=funcao+"ps.set"+MapeadorTipos.metodoJdbc(atributos.get(0).getTypoColuna())+""
                      + "(1, "+nomeClasse+".get"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(0).getColuna())+"());\n\t\t\t";
           funcao=funcao+"ps.executeUpdate();\n\t\t"
-                     + "JOptionPane.showMessageDialog(null,"+'"'+"Ecluido Com Sucesso: "+'"'+","+'"'+"Mensagem do Sistema - Excluir"+'"'+",1);\n\t\t\t"
+                     + "JOptionPane.showMessageDialog(null,"+'"'+"Excluido Com Sucesso: "+'"'+","+'"'+"Mensagem do Sistema - Excluir"+'"'+",1);\n\t\t\t"
                     
-                     + getCatchAndFinally("Excluir")//OBS O FINALLY esta fechando as conexoes
+                     + getCatchAndFinally("Excluir", false)//OBS O FINALLY esta fechando as conexoes
                      + "}\n\t\t";
          return funcao;
     }
@@ -213,7 +196,7 @@ public class GeradorClasseDAO {
     }
 
     private String getMetodoLocalizar(String nomeClasse, List<ListColuna> atributos) {
-        String funcao="\tpublic "+new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse)+" localizar(Integer "+atributos.get(0).getColuna()+") throws SQLException {\n"
+        String funcao="\tpublic "+new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse)+" localizar("+MapeadorTipos.tipoJava(atributos.get(0).getTypoColuna())+" "+atributos.get(0).getColuna()+") throws SQLException {\n"
                 + "\t\tConnection con = DriverManager.getConnection(new "+this.ClasseConexao+"().config.getString("+'"'+"url"+'"'+") ,"
                                                                 + "new "+this.ClasseConexao+"().config.getString("+'"'+"usuario"+'"'+"),"
                                                                 + "new "+this.ClasseConexao+"().config.getString("+'"'+"senha"+'"'+"));\n"
@@ -224,22 +207,22 @@ public class GeradorClasseDAO {
                 + "\t\ttry{\n"//try
                 + "\t\t\tps = con.prepareStatement(sqlLocalizar);\n"
                 + "\t\t\t";
-        funcao=funcao+"ps.set"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(0).getTypoColuna().toLowerCase()))+""
+        funcao=funcao+"ps.set"+MapeadorTipos.metodoJdbc(atributos.get(0).getTypoColuna())+""
                      + "(1, "+atributos.get(0).getColuna()+");\n\t\t\t"
-                     + "rs = ps.executeQuery();\n\t\t"
-                     +"//if(!rs.next()){\n\t\t"
-                     + "//return null;\n\t\t"
-                     + "//}\n\t\t";
+                     + "rs = ps.executeQuery();\n\t\t\t"
+                     + "if(!rs.next()){\n\t\t\t\t"
+                     + "return null;\n\t\t\t"
+                     + "}\n\t\t\t";
                     
         
         for(int i=0;i<atributos.size();i++){//cliente.setAuditoria(rs.getString("auditoria"));
-             funcao=funcao+nomeClasse+".set"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(i).getColuna())+"(rs.get"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(i).getTypoColuna()))+"("
+             funcao=funcao+nomeClasse+".set"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(i).getColuna())+"(rs.get"+MapeadorTipos.metodoJdbc(atributos.get(i).getTypoColuna())+"("
                                      + '"'+atributos.get(i).getColuna()+'"'+"));\n\t\t\t";
          }   
         
         funcao=funcao + "return "+nomeClasse+"; \n\t\t"
                     
-                     + getCatchAndFinally("Localizar")
+                     + getCatchAndFinally("Localizar", true)
                      + "return "+nomeClasse+"; \n\t\t"
                      + "}\n\t\t";
      
@@ -258,7 +241,7 @@ public class GeradorClasseDAO {
         return '"'+before+'"';
     }
 
-    private String getCatchAndFinally(String metodo) {
+    private String getCatchAndFinally(String metodo, boolean fechaResultSet) {
         String Catchs="}catch (NumberFormatException e) {\n\t\t\t"
                      + "JOptionPane.showMessageDialog(null,"+'"'+"NumberFormaterExeption Erro: "+'"'+"+ e.getMessage(),"+'"'+"ClasseDAO Func."+metodo+'"'+",0);\n\t\t\t"
                      + "e.printStackTrace();\n\t\t"
@@ -276,7 +259,8 @@ public class GeradorClasseDAO {
                      + "e.printStackTrace();\n\t\t"
                      + "}\n\t\t\t"
                      + "finally {\n\t\t\t"
-                     + "ps.close();\n\t\t\t"
+                     + (fechaResultSet ? "if (rs != null) rs.close();\n\t\t\t" : "")
+                     + "if (ps != null) ps.close();\n\t\t\t"
                      + "con.close();\n\t\t\t"
                      + "}\n\t\t";
         return Catchs;
@@ -302,12 +286,12 @@ public class GeradorClasseDAO {
                      + "while(rs.next()){\n\t\t"
                      + nomeClasse+" =  new "+new GeradorClasseDTO().getPrimeiraLetraMaior(nomeClasse)+"();\n\t\t\t";
         for(int i=0;i<atributos.size();i++){//cliente.setAuditoria(rs.getString("auditoria"));
-             funcao=funcao+ nomeClasse+".set"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(i).getColuna())+"(rs.get"+getIntCerto(new GeradorClasseDTO().getTipoAtributoCorreto(atributos.get(i).getTypoColuna()))+"("
+             funcao=funcao+ nomeClasse+".set"+new GeradorClasseDTO().getPrimeiraLetraMaior(atributos.get(i).getColuna())+"(rs.get"+MapeadorTipos.metodoJdbc(atributos.get(i).getTypoColuna())+"("
                           + '"'+atributos.get(i).getColuna()+'"'+"));\n\t\t\t";
          }
          funcao=funcao+"resultado.add("+nomeClasse+");\n\t\t\t" 
                      +"}\n\t\t"
-                     + getCatchAndFinally("Localizar")
+                     + getCatchAndFinally("Listar", true)
                      + "return resultado; \n\t\t"
                      + "}\n\t\t";
          return funcao;
