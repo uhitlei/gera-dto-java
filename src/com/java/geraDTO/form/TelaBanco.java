@@ -82,7 +82,7 @@ public class TelaBanco extends javax.swing.JFrame {
         lbOk.setText("STATUS...");
         jPanel1.add(lbOk, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 250, -1, -1));
 
-        tfPacote.setText("com.bia.seller.control.utilitarios");
+        tfPacote.setText("utilitarios");
         tfPacote.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
         jPanel1.add(tfPacote, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 170, 199, 20));
 
@@ -94,7 +94,7 @@ public class TelaBanco extends javax.swing.JFrame {
         tfConexao.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
         jPanel1.add(tfConexao, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 200, 200, 20));
 
-        cbSSGBD.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "com.mysql.jdbc.Driver", "oracle.jdbc.driver.OracleDriver", "net.sourceforge.jtds.jdbc.Driver", "sun.jdbc.odbc.JdbcOdbcDriver", "com.sybase.jdbc4.jdbc.SybDriver", "sun.jdbc.odbc.JdbcOdbcDriver", "com.microsoft.sqlserver.jdbc.SQLServerDriver" }));
+        cbSSGBD.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "com.mysql.jdbc.Driver", "oracle.jdbc.driver.OracleDriver", "net.sourceforge.jtds.jdbc.Driver", "com.sybase.jdbc4.jdbc.SybDriver", "com.microsoft.sqlserver.jdbc.SQLServerDriver" }));
         cbSSGBD.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cbSSGBDActionPerformed(evt);

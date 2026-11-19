@@ -1,0 +1,13 @@
+# Copie para src/utilitarios/bancodedados.properties (arquivo ignorado pelo git).
+# Tudo e opcional para o GeraDTO: a tela pede driver, URL, usuario e senha.
+#
+# local: pasta onde Tabela.java e TabelaDAO.java sao gravados (padrao: ./gerado)
+local=gerado/
+#
+# Usadas por utilitarios.Pool/DataSource (e pelo DAO gerado, que le a mesma
+# chave da sua propria classe de conexao):
+driver=com.mysql.jdbc.Driver
+url=jdbc:mysql://localhost:3306/banco
+usuario=usuario
+senha=senha
+numeroMaximoConexoes=5

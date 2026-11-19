@@ -17,7 +17,7 @@ public class Pool implements InterfacePool {
 	
 	public Pool(){
 		
-		config = ResourceBundle.getBundle("br.com.siscom.conexao.bancodedados");
+		config = ResourceBundle.getBundle(conexao.ARQUIVO_CONFIG);
 		ds = new DataSource(config.getString("url"),config.getString("driver"),config.getString("usuario"),config.getString("senha"));
 		numeroMaximoConexoes = Integer.parseInt(config.getString("numeroMaximoConexoes"));
                 conexoesLivres = new ArrayBlockingQueue<Connection> (numeroMaximoConexoes, true);
@@ -35,7 +35,8 @@ public class Pool implements InterfacePool {
 				if(con == null){
 					con =  ds.getConnection();
 				}else if(con.isClosed()){
-					this.getConnection();
+					// conexao devolvida ja fechada: descarta e abre outra
+					con = ds.getConnection();
 				}
 				conexoesUtilizadas.put(con.toString(), con);
 			}
@@ -48,8 +49,18 @@ public class Pool implements InterfacePool {
 
 	@Override
 	public void liberarConnection(Connection con) {
-		conexoesLivres.add(con);
+		if (con == null) {
+			return;
+		}
 		conexoesUtilizadas.remove(con.toString());
+		// offer em vez de add: com a fila cheia a conexao excedente e fechada
+		if (!conexoesLivres.offer(con)) {
+			try {
+				con.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
 
 	}
 

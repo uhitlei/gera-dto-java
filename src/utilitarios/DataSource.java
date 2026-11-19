@@ -1,7 +1,6 @@
 package utilitarios;
 
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
@@ -25,7 +24,7 @@ public class DataSource implements InterfaceDataSource {
 		try {
 			Class.forName(driver);
 		} catch (ClassNotFoundException e) {
-			System.out.println("Classe n�o Encontrada! = "+ e.getMessage());
+			System.out.println("Classe não encontrada! = "+ e.getMessage());
 			e.printStackTrace();
 		}
 	}

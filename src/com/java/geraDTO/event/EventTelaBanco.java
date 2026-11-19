@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.ImageIcon;
 import utilitarios.Controller;
-import utilitarios.Controller2;
+import utilitarios.conexao;
 
 /**
  *
@@ -39,39 +39,66 @@ public class EventTelaBanco extends TelaBanco implements ActionListener {
         
     }
  
+    private String senha() {
+        return new String(tfSenha.getPassword());
+    }
+
+    /** Tabela selecionada no combo, ou null se nenhuma (evita IndexOutOfBounds). */
+    private ListTabela tabelaSelecionada() {
+        int i = cbTabelas.getSelectedIndex();
+        if (i < 0 || i >= tabelas.size()) {
+            lbOk.setText("Selecione uma tabela");
+            return null;
+        }
+        return tabelas.get(i);
+    }
+
     private void listarColunas(){
+        ListTabela tabela = tabelaSelecionada();
+        if (tabela == null) {
+            return;
+        }
         Controller rotina = new Controller();
         //OBS CRIAR UMA CLASSE PARA ARMAZENAR ESSES DADOS
-        colunas = rotina.listaColunas(tabelas.get(cbTabelas.getSelectedIndex()).getSchemaTabela(),
-                                      tabelas.get(cbTabelas.getSelectedIndex()).getTabela(),
+        colunas = rotina.listaColunas(tabela.getSchemaTabela(),
+                                      tabela.getTabela(),
                                       tfHost.getText(),cbSSGBD.getSelectedItem().toString(),
-                                      tfUsuario.getText(),tfSenha.getText());
+                                      tfUsuario.getText(),senha());
         cbCampos.removeAllItems();
         for (int i = 0; i < colunas.size(); i++) {
             cbCampos.addItem(colunas.get(i).getColuna()+" Tipo: "+colunas.get(i).getTypoColuna());
         }
     }
     private void listarTabelas(){
-        System.out.println(cbSSGBD.getSelectedItem().toString());
         Controller rotina = new Controller();
         tabelas =  rotina.ListaTabelas(tfHost.getText(),
                                        cbSSGBD.getSelectedItem().toString(),
                                        tfUsuario.getText(),
-                                       tfSenha.getText() );
+                                       senha() );
         cbTabelas.removeAllItems();
+        cbCampos.removeAllItems();
+        colunas = new ArrayList<ListColuna>();
         for(int i=0; i<tabelas.size();i++){
             cbTabelas.addItem(tabelas.get(i).getTabela());
         }
-        
+
     }
 
     private void geraDTO(){
-        if(new GeradorClasseDTO().gerarClasse(tabelas.get(cbTabelas.getSelectedIndex()).getTabela(), colunas, tfPacote.getText(), tfConexao.getText())){
+        ListTabela tabela = tabelaSelecionada();
+        if (tabela == null) {
+            return;
+        }
+        // Sempre relê as colunas da tabela selecionada: antes, trocar a tabela no
+        // combo sem clicar em "Pegar Colunas" gerava a classe com as colunas da anterior.
+        listarColunas();
+        if(new GeradorClasseDTO().gerarClasse(tabela.getTabela(), colunas, tfPacote.getText(), tfConexao.getText())){
             lbOk.setText("GERADO");
+            lbOk.setToolTipText(conexao.getDiretorioSaida().getAbsolutePath());
         }else
             lbOk.setText("Não gerado");
     }
-    
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource() == cbTabelas|| e.getSource() == btPegarCampos)
